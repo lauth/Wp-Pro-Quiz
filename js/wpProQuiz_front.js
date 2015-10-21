@@ -1740,6 +1740,14 @@ wpProQuizReady(function () {
 
                 v.eq(1).text(p + '%');
                 v.eq(0).css('width', (240 * p / 100) + 'px');
+
+				// Added by rezoactif
+				if (!g) {
+					$('#rzQuiz_score_value').text(p + '%');
+				}
+				else {
+					$('#rzQuiz_average_value').text(p + '%');
+				}                
             },
 
             handleToplistData: function (json) {

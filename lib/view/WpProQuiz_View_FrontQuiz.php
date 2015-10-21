@@ -692,49 +692,60 @@ class WpProQuiz_View_FrontQuiz extends WpProQuiz_View_View
     {
         ?>
         <div style="display: none;" class="wpProQuiz_results">
-            <h4 class="wpProQuiz_header"><?php _e('Results', 'wp-pro-quiz'); ?></h4>
-            <?php if (!$this->quiz->isHideResultCorrectQuestion()) { ?>
-                <p>
-                    <?php printf(__('%s of %s questions answered correctly', 'wp-pro-quiz'),
-                        '<span class="wpProQuiz_correct_answer">0</span>', '<span>' . $questionCount . '</span>'); ?>
-                </p>
-            <?php }
-            if (!$this->quiz->isHideResultQuizTime()) { ?>
-                <p class="wpProQuiz_quiz_time">
-                    <?php _e('Your time: <span></span>', 'wp-pro-quiz'); ?>
-                </p>
-            <?php } ?>
-            <p class="wpProQuiz_time_limit_expired" style="display: none;">
-                <?php _e('Time has elapsed', 'wp-pro-quiz'); ?>
-            </p>
-            <?php if (!$this->quiz->isHideResultPoints()) { ?>
-                <p class="wpProQuiz_points">
-                    <?php printf(__('You have reached %s of %s points, (%s)', 'wp-pro-quiz'), '<span>0</span>',
-                        '<span>0</span>', '<span>0</span>'); ?>
-                </p>
-            <?php } ?>
-            <?php if ($this->quiz->isShowAverageResult()) { ?>
-                <div class="wpProQuiz_resultTable">
-                    <table>
-                        <tbody>
-                        <tr>
-                            <td class="wpProQuiz_resultName"><?php _e('Average score', 'wp-pro-quiz'); ?></td>
-                            <td class="wpProQuiz_resultValue">
-                                <div style="background-color: #6CA54C;">&nbsp;</div>
-                                <span>&nbsp;</span>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td class="wpProQuiz_resultName"><?php _e('Your score', 'wp-pro-quiz'); ?></td>
-                            <td class="wpProQuiz_resultValue">
-                                <div style="background-color: #F79646;">&nbsp;</div>
-                                <span>&nbsp;</span>
-                            </td>
-                        </tr>
-                        </tbody>
-                    </table>
-                </div>
-            <?php } ?>
+			<div class="rzQuiz_block_score">
+				<div class="rzQuiz_score_title">
+					<?php _e( 'Votre <strong>score</strong>', 'wp-pro-quiz' ) ?>
+				</div>
+				<div id="rzQuiz_score_value"></div>
+				<div class="rzQuiz_average">
+					<?php _e( 'Score moyen', 'wp-pro-quiz' ) ?>
+					<span id="rzQuiz_average_value"></span>
+				</div>
+			</div>
+			<div class="rzQuiz_text">
+				<?php if ( ! $this->quiz->isHideResultCorrectQuestion() ) { ?>
+					<?php printf( __( 'Vous avez répondu correctement à <strong>%s questions sur %s</strong>', 'wp-pro-quiz' ), '<span class="wpProQuiz_correct_answer">0</span>', '<span class="wpProQuiz_max_answer">' . $questionCount . '</span>' ) ?><br />
+				<?php } ?>
+				<?php if ( ! $this->quiz->isHideResultPoints() ) { ?>
+					<span class="wpProQuiz_points"><?php printf( __( 'Vous avez atteint %s points sur %s (%s)', 'wp-pro-quiz' ), '<span>0</span>', '<span>0</span>', '<span>0</span>' ) ?></span>
+				<?php } ?>
+				<div>
+					<ul class="wpProQuiz_resultsList">
+						<?php foreach ( $result['text'] as $resultText ) { ?>
+							<li style="display: none;">
+								<div>
+									<?php echo do_shortcode( apply_filters( 'comment_text', $resultText ) ); ?>
+								</div>
+							</li>
+						<?php } ?>
+					</ul>
+				</div>
+
+				<?php if ( ! $this->quiz->isBtnRestartQuizHidden() ) { ?>
+					<input class="wpProQuiz_button" type="button" name="restartQuiz"
+					       value="<?php echo $this->_buttonNames['restart_quiz']; ?>">
+				<?php }
+				if ( ! $this->quiz->isBtnViewQuestionHidden() ) { ?>
+					<input class="wpProQuiz_button" type="button" name="reShowQuestion"
+					       value="<?php _e( 'View questions', 'wp-pro-quiz' ); ?>">
+				<?php } ?>
+				<?php if ( $this->quiz->isToplistActivated() && $this->quiz->getToplistDataShowIn() == WpProQuiz_Model_Quiz::QUIZ_TOPLIST_SHOW_IN_BUTTON ) { ?>
+					<input class="wpProQuiz_button" type="button" name="showToplist"
+					       value="<?php _e( 'Show leaderboard', 'wp-pro-quiz' ); ?>">
+				<?php } ?>
+
+			</div>
+			<div class="wpProQuiz_bottom">
+				<input class="wpProQuiz_button" type="button" name="publishFacebook" id="publishFacebook"
+				       value="<?php _e( 'Publier sur facebook', 'wp-pro-quiz' ) ?>"/>
+
+				<?php if ( !empty( $_SESSION['challenge'] ) && $_SESSION['challenge']['id_quiz'] == $_GET['quizz']  ): ?>
+					<span class="rzQuiz_challenger">
+						<?php printf( __( '/ %s avait obtenu le score de <strong>%s</strong>', 'wp-pro-quiz' ), $_SESSION['challenge']['user_name'], $_SESSION['challenge']['score'] ) ?>
+					</span>
+				<?php endif ?>
+			</div>
+            
             <div class="wpProQuiz_catOverview" <?php $this->isDisplayNone($this->quiz->isShowCategoryScore()); ?>>
                 <h4><?php _e('Categories', 'wp-pro-quiz'); ?></h4>
 
@@ -788,6 +799,88 @@ class WpProQuiz_View_FrontQuiz extends WpProQuiz_View_View
                 <?php } ?>
             </div>
         </div>
+
+		<div id="fb-root"></div>
+		<script>
+			window.fbAsyncInit = function () {
+				FB.init({appId: '1623483387939665', status: true, cookie: true, xfbml: true});
+			};
+
+			(function () {
+				var e = document.createElement("script");
+				e.async = true;
+				e.src = document.location.protocol + "//connect.facebook.net/en_US/all.js";
+				document.getElementById("fb-root").appendChild(e);
+			}());
+
+			function streamPublish() {
+				<?php if ( !empty( $_SESSION['challenge'] )  && $_SESSION['challenge']['id_quiz'] == $_GET['quizz'] ): ?>
+				var challengeScore = '<?php echo $_SESSION['challenge']['score'] ?>';
+				var challengeName = '<?php echo $_SESSION['challenge']['user_name'] ?>';
+				<?php else: ?>
+				var challengeScore = 0;
+				var challengeName = '';
+				<?php endif ?>
+
+				var quizName = jQuery('.wpProQuiz_content > h2').text();
+				// var quizScore = jQuery('.wpProQuiz_correct_answer').text();
+				var quizScore = jQuery('tr + tr .wpProQuiz_resultValue span').text();
+				var maxScore = jQuery('.wpProQuiz_max_answer').text();
+
+				FB.login(function (response) {
+					if (response.authResponse) {
+						var access_token = FB.getAuthResponse()['accessToken'];
+
+						FB.api(
+							'/me',
+							function (response) {
+								if (response && !response.error) {
+									var name = response.name;
+									var data = {
+										'action': 'new_challenge',
+										'id_quiz': <?php echo ( !empty( $_GET['quizz'] ) ? $_GET['quizz'] : 0 ) ?>,
+										'id_user': <?php echo get_current_user_id() ?>,
+										'score': quizScore,
+										'score_max': maxScore,
+										'user_name': name
+									};
+									jQuery.post(
+										'<?php echo admin_url( 'admin-ajax.php' ) ?>',
+										data,
+										function (response) {
+											var id_challenge = response;
+
+											FB.api(
+												'/me/feed',
+												'POST',
+												{
+													'message': quizName + ':\n '
+													+ ( challengeName != '' ? challengeName + ' a obtenu le score de ' + challengeScore + '.\n' : '' )
+													+ name + ' a obtenu le score de ' + quizScore + '.\n'
+													+ 'Pouvez-vous faire mieux ?\n',
+													'link': '<?php page_url( Page::QUIZZ ) ?>?challenge=' + id_challenge
+												},
+												function (response) {
+												}
+											);
+										}
+									);
+								}
+							}
+						);
+
+					} else {
+						console.log('User cancelled login or did not fully authorize.');
+					}
+				}, {scope: 'publish_actions'});
+			}
+
+			jQuery(document).ready(function ($) {
+				$('#publishFacebook').click(function () {
+					streamPublish();
+				});
+			});
+		</script>
         <?php
     }
 
