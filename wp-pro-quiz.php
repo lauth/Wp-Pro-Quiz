@@ -10,6 +10,8 @@ Text Domain: wp-pro-quiz
 Domain Path: /languages
 */
 
+include_once __DIR__ . '/manage-categories.php';
+
 define('WPPROQUIZ_VERSION', '42.0.36');
 
 define('WPPROQUIZ_DEV', false);
