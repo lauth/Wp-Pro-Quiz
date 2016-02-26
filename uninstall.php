@@ -1,8 +1,7 @@
 <?php
 
-if (!defined('WP_UNINSTALL_PLUGIN')) {
-    exit();
-}
+if(!defined('WP_UNINSTALL_PLUGIN'))
+	exit();
 
 include_once 'lib/helper/WpProQuiz_Helper_DbUpgrade.php';
 
